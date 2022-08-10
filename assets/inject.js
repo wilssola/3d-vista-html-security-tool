@@ -2,19 +2,24 @@ document.addEventListener('DOMContentLoaded', injectOnLoad);
 
 function injectOnLoad() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'auth.txt', true);
+    xhr.open('GET', 'REQUEST_URL', true);
     xhr.onload = () => {
         const fileExists = xhr.status === 200;
-        const authorized = xhr.responseText.length === 0;
-
-        console.log(xhr.responseText);
-
-        if(!fileExists && !authorized) { 
-            window.location.href = 'notfound.html';
-            return;
-        }
+        if(!fileExists) 
+            return blockLoad();
+        
+        const json = JSON.parse(xhr.responseText);
+        if (!json.auth)
+            return blockLoad();
 
         onLoad();
     }
     xhr.send();
+        
+    const interval = 30 * 1000;
+    setInterval(() => injectOnLoad(), interval);
+}
+
+function blockLoad() { 
+    return setTimeout(() => window.location.reload(), 1000);
 }

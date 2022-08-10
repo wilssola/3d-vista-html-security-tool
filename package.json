@@ -2,7 +2,7 @@
   "name": "3d-vista-html-security-tool",
   "author": "Wilson Oliveira Lima",
   "version": "1.0.0",
-  "description": "3D VISTA HTML SECURITY TOOL",
+  "description": "3d-vista-html-security-tool",
   "main": "./.webpack/main/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -35,6 +35,7 @@
     "@electron-forge/maker-zip": "6.0.0-beta.57",
     "@electron-forge/plugin-webpack": "6.0.0-beta.57",
     "@marshallofsound/webpack-asset-relocator-loader": "0.5.0",
+    "@rabbitholesyndrome/electron-forge-maker-portable": "^0.1.1",
     "@testing-library/jest-dom": "5.14.1",
     "@testing-library/react": "11.2.7",
     "@types/adm-zip": "^0.5.0",
@@ -68,9 +69,9 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "name": "3D VISTA HTML SECURITY TOOL",
+        "name": "3d-vista-html-security-tool",
         "executableName": "3d-vista-html-security-tool",
-        "icon": "assets/icon",
+        "icon": "./assets/icon.ico",
         "extraResource": [
           "assets"
         ]
@@ -98,24 +99,10 @@
       ],
       "makers": [
         {
-          "name": "@electron-forge/maker-squirrel",
+          "name": "@rabbitholesyndrome/electron-forge-maker-portable",          
           "config": {
-            "name": "Electron Starter"
+            "icon": "./assets/icon.ico"
           }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
         }
       ]
     }

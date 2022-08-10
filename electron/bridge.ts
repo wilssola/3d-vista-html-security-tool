@@ -1,8 +1,12 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron';
 
 export const api = {
-  selectZip: () => {
-    ipcRenderer.send('selectZip');
+  selectZip: (requestUrl: string) => {
+    ipcRenderer.send('selectZip', requestUrl);
+  },
+
+  generateJson: () => {
+    ipcRenderer.send('generateJson');
   },
   
   on: (channel: string, callback: Function) => {
@@ -10,4 +14,4 @@ export const api = {
   }
 }
 
-contextBridge.exposeInMainWorld('Main', api)
+contextBridge.exposeInMainWorld('Main', api);

@@ -1,6 +1,6 @@
-import { GlobalStyle } from './styles/GlobalStyle'
+import { GlobalStyle } from './styles/GlobalStyle';
 
-import { Greetings } from './components/Greetings'
+import { Greetings } from './components/Greetings';
 
 export function App() {
   return (
@@ -8,5 +8,5 @@ export function App() {
       <GlobalStyle />
       <Greetings />
     </>
-  )
+  );
 }

