@@ -17,3 +17,9 @@ yarn start
 ```bash
 yarn package
 ```
+
+## Make
+
+```bash
+yarn make
+```
