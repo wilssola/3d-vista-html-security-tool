@@ -10,11 +10,11 @@ export const Container = styled.input`
   justify-content: center;
   text-align: center;
 
-  background: #7050e1;
+  background: #8257e6;
   border-radius: 8px;
   border: 0;
 
-  color: #F7F6FF;
+  color: #FFF;
   font-size: 16px;
 
   cursor: pointer;

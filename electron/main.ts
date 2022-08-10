@@ -25,7 +25,7 @@ function createWindow () {
     resizable: false,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
-    backgroundColor: '#131622',
+    backgroundColor: '#191622',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
