@@ -41,7 +41,9 @@ function createWindow () {
 }
 
 async function registerListeners () {
-  ipcMain.on('selectZip', async (_, requestUrl) => {
+  ipcMain.on('selectZip', async (_, requestUrl: string) => {
+      requestUrl = requestUrl.trim();
+
       if(requestUrl === '') {
         dialog.showMessageBoxSync(mainWindow as BrowserWindow, {
           type: 'error',
