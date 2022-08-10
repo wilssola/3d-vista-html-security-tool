@@ -4,7 +4,7 @@ import { Input } from '../Input';
 import { Button } from '../Button';
 import { Container, Text } from './styles';
 
-export function Greetings() {
+export function Main() {
   function selectZip() {
     window.Main.selectZip(requestUrl);
   }
