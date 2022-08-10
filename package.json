@@ -99,7 +99,7 @@
       ],
       "makers": [
         {
-          "name": "@rabbitholesyndrome/electron-forge-maker-portable",          
+          "name": "@rabbitholesyndrome/electron-forge-maker-portable",
           "config": {
             "icon": "./assets/icon.ico"
           }

@@ -201,34 +201,48 @@ function processZip(dirPath: string, requestUrl: string) {
     const filePath = path.join(dirPath, file);
     const fileContent = fs.readFileSync(filePath, 'utf8');
 
+    const fileContentCors = fileContent.replace('<head>', '<head><meta http-equiv="Access-Control-Allow-Origin" content="*" />');
+
     const javaScriptFirstPart = '<script type="text/javascript">';
     const javaScriptLastPart = '</script>';
 
-    const fileContentFistPart = fileContent.split(javaScriptFirstPart)[0];
-    const countEndScript = fileContent.split(javaScriptLastPart).length - 1;
-    const fileContentLastPart = fileContent.split(javaScriptLastPart)[countEndScript];
+    const fileContentFistPart = fileContentCors.split(javaScriptFirstPart)[0];
+    const countEndScript = fileContentCors.split(javaScriptLastPart).length - 1;
+    const fileContentLastPart = fileContentCors.split(javaScriptLastPart)[countEndScript];
 
-    const javaScriptContent = fileContent.replace(fileContentFistPart, '').replace(fileContentLastPart, '').replace(javaScriptFirstPart, '').replace(javaScriptLastPart, '');
+    const javaScriptContent = fileContentCors.replace(fileContentFistPart, '').replace(fileContentLastPart, '').replace(javaScriptFirstPart, '').replace(javaScriptLastPart, '');
     const javaScriptContentInjected = injectZip(javaScriptContent, requestUrl);
     const JavaScriptContentObfuscated = JavaScriptObfuscator.obfuscate(javaScriptContentInjected, {
       compact: true,
       controlFlowFlattening: true,
-      controlFlowFlatteningThreshold: 0.75,
+      controlFlowFlatteningThreshold: 1,
       deadCodeInjection: true,
       deadCodeInjectionThreshold: 1,
       debugProtection: true,
-      debugProtectionInterval: 2000,
+      debugProtectionInterval: 4000,
       disableConsoleOutput: true,
+      identifierNamesGenerator: 'hexadecimal',
       log: false,
       numbersToExpressions: true,
       renameGlobals: true,
       renameProperties: false,
+      selfDefending: true,
       simplify: true,
       splitStrings: true,
+      splitStringsChunkLength: 5,
       stringArray: true,
+      stringArrayCallsTransform: true,
+      stringArrayEncoding: ['rc4'],
       stringArrayIndexShift: true,
       stringArrayRotate: true,
       stringArrayShuffle: true,
+      stringArrayWrappersCount: 5,
+      stringArrayWrappersChainedCalls: true,    
+      stringArrayWrappersParametersMaxCount: 5,
+      stringArrayWrappersType: 'function',
+      stringArrayThreshold: 1,
+      transformObjectKeys: true,
+      unicodeEscapeSequence: false,
       target: 'browser',
     });
     const javaScriptTag = javaScriptFirstPart + JavaScriptContentObfuscated + javaScriptLastPart;
